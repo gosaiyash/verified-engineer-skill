@@ -1,122 +1,170 @@
-# Verified-engineer-skill
+# verified-engineer-skill
 
-A portable **Agent Skill** that guides an AI coding agent through the full software-engineering lifecycle in the style of modern coding agents: understand the request, explore the repository, plan, implement, debug, test, review, refactor, inspect Git changes, check security, and report **only what was actually verified**.
+A portable **Agent Skill** that makes an AI coding agent work like a careful senior engineer: explore the repo, plan, implement, debug, test, review, refactor, use Git safely, check security, and **report only what was actually verified**.
 
-The goal is reliable engineering behavior, not fast code generation.
+> **Core idea:** code that "looks right" is not done. Done means you ran the checks, saw the results, and told the truth about anything you could not verify.
 
-## What it covers
+The skill is plain Markdown with YAML frontmatter (the open Agent Skills format), so it is not tied to one vendor, model, IDE, or operating system.
 
-Explore a repository - plan changes - implement features - debug systematically - write and run tests - review code - refactor safely - Git safety - security review - release-readiness assessment - honest completion reports.
+---
 
-## Package structure
+## What it does
 
-```
-agentic-coding-engineer/
-├── SKILL.md                      Orchestration layer (the agent reads this first)
-├── README.md                     This file
-├── references/                   Detailed guidance, loaded on demand
-│   ├── repository-analysis.md
-│   ├── planning-and-implementation.md
-│   ├── systematic-debugging.md
-│   ├── testing-and-verification.md
-│   ├── code-review.md
-│   ├── safe-refactoring.md
-│   ├── git-safety.md
-│   ├── security-review.md
-│   └── completion-report.md
-├── workflows/                    Step-by-step procedures per mode
-│   ├── explore-repository.md
-│   ├── implement-feature.md
-│   ├── debug-and-fix.md
-│   ├── test-and-verify.md
-│   ├── review-changes.md
-│   ├── refactor-code.md
-│   └── release-readiness.md
-├── integrations/                 OPTIONAL host-specific notes
-│   ├── claude-code.md
-│   └── generic-agents.md
-├── templates/
-│   └── project-instructions.md   Snippet for AGENTS.md / CLAUDE.md-style files
-├── scripts/
-│   └── validate_skill.py         Package validator (stdlib only, read-only)
-├── tests/
-│   └── test_validate_skill.py    Unit tests for the validator (unittest)
-└── evals/
-    └── behavior-tests.md         Manual behavior scenarios for host agents
-```
+| Mode | What the agent does |
+|---|---|
+| **Explore / Explain** | Maps the repo, finds conventions and commands, answers with `file:line` evidence |
+| **Plan** | Requirements, acceptance criteria, approach, risks, rollback |
+| **Implement** | Smallest coherent change, follows project style, adds tests |
+| **Debug** | Reproduce, hypothesize, test with evidence, fix the root cause, add a regression test |
+| **Test** | Finds the project's real commands, runs smallest checks first |
+| **Review** | Prioritized findings with severity, location, trigger, impact, evidence (read-only) |
+| **Refactor** | Behavior-preserving, small verified steps, characterization tests |
+| **Git** | Inspects before acting; never discards your changes or force-pushes without being asked |
+| **Security audit** | Trust boundaries, injection, authz, secrets, unsafe file operations |
+| **Release readiness** | Gate-by-gate readiness report; never publishes, tags, or deploys |
 
-## Main workflow
+Every check is reported with exactly one status:
 
-1. **Capability detection** - the agent determines which tools it actually has (files, search, edit, shell, Git, network) and adapts when something is missing.
-2. **Intent classification** - Explain, Explore, Plan, Implement, Debug, Test, Review, Refactor, Git, Documentation, Security audit, or Release readiness. The smallest sufficient procedure is chosen. Review-only modes never modify files.
-3. **Investigate** - read project instructions, detect the toolchain from files, trace relevant code, check Git state.
-4. **Plan** (when the change warrants it) - requirements, acceptance criteria, approach, edge cases, test strategy, risks, rollback.
-5. **Implement or debug** - minimal coherent change following project conventions; root-cause debugging with evidence.
-6. **Verify** - run the smallest relevant check first, then widen. Each check is reported as `PASS`, `FAIL`, `BLOCKED`, `NOT RUN`, or `INCONCLUSIVE`.
-7. **Report** - summary, files changed, decisions, exact checks and results, limitations, remaining work.
+`PASS` ran and succeeded | `FAIL` ran and failed | `BLOCKED` could not run | `NOT RUN` not attempted | `INCONCLUSIVE` ran but proved nothing
 
-The core files are vendor-neutral. Host-specific notes live only under `integrations/`.
+---
 
-## Installing
+## Install
 
-Installation differs by agent. Paths, permissions, slash commands, custom agents, and script execution all depend on the receiving platform, so no single procedure is correct everywhere.
+Installation differs by agent. The skill is a **folder**: copy the whole `verified-engineer/` directory, not just `SKILL.md`, because `SKILL.md` links to the reference and workflow files.
 
-- **Agent with Agent Skills support:** copy the whole `agentic-coding-engineer/` directory into the location that agent loads skills from (see its documentation). The directory name should equal the `name` in the `SKILL.md` frontmatter.
-- **Claude Code:** see `integrations/claude-code.md`.
-- **Other agents:** see `integrations/generic-agents.md` for skill-capable, instruction-file-only, and chat-only options.
+The folder name must match the `name` field in the `SKILL.md` frontmatter.
 
-After installing, give the agent a small real task and watch whether it loads `SKILL.md`, follows the workflow, and reports honestly.
-
-## Validating the package and running the tests
-
-Requires Python 3.8+ and nothing else.
+### Claude Code
 
 ```bash
-# Validate the package (default: the package containing the script)
-python scripts/validate_skill.py
+# All projects
+cp -R skills/verified-engineer ~/.claude/skills/
 
-# Validate another copy (use --allow-dir-mismatch if the folder was renamed)
-python scripts/validate_skill.py /path/to/agentic-coding-engineer
-python scripts/validate_skill.py /path/to/copy --allow-dir-mismatch
-
-# Treat warnings as failures / machine-readable output
-python scripts/validate_skill.py --strict
-python scripts/validate_skill.py --format json
-
-# Unit tests for the validator
-python -m unittest discover -s tests -v
+# One project
+mkdir -p .claude/skills && cp -R skills/verified-engineer .claude/skills/
 ```
 
-Exit codes: `0` pass, `1` validation failure, `2` usage problem or internal error. The validator never modifies files.
+Start a new session, then ask: *"Use the verified-engineer skill to fix this bug."*
 
-### What validation does and does not prove
+### Google Antigravity
 
-Validation checks the package's **structure**: required files, frontmatter fields and naming rules, non-empty content, required sections in workflows, local Markdown links, and some portability hints. It uses a small, documented subset of YAML parsing (see the docstring in `scripts/validate_skill.py`), so exotic YAML is not fully interpreted.
+```bash
+# One project
+mkdir -p .agent/skills && cp -R skills/verified-engineer .agent/skills/
 
-It does **not** show that an AI agent follows the skill. That requires the manual scenarios in `evals/behavior-tests.md`, which have not been run for you. Treat any claim about agent behavior as unproven until you measure it on your agent.
+# All projects
+mkdir -p ~/.gemini/antigravity/skills && cp -R skills/verified-engineer ~/.gemini/antigravity/skills/
+```
 
-## Customizing
+### Other agents
 
-- **Workflows:** edit files in `workflows/`. Keep the ten required sections (Purpose, When to use, Required inputs, Preconditions, Procedure, Conditional decisions, Failure handling, Safety checks, Expected output, Completion criteria) - the validator enforces them.
-- **Add a workflow or reference:** create the file, link it from the routing table or reference index in `SKILL.md` so agents know when to load it, and add it to `REQUIRED_FILES` in the validator if it should be mandatory.
-- **Project conventions:** keep them in your agent's project-instruction file (`templates/project-instructions.md`) rather than editing the core skill.
-- **Keep `SKILL.md` lean:** the validator warns above ~500 lines. Move detail into `references/`.
-- **Description tuning:** the frontmatter `description` is what hosts use to decide when to load the skill. If it triggers too rarely or too often, adjust the wording, then re-test.
+- **Supports Agent Skills:** copy the folder to wherever that agent loads skills from.
+- **Supports only an instruction file** (for example `AGENTS.md`): paste the snippet from `templates/project-instructions.md` and keep the folder readable by the agent.
+- **Chat only, no filesystem:** paste `SKILL.md` into the first message. Expect reduced capability; the skill tells the agent to ask for files and to mark checks `NOT RUN`.
 
-## Adapting scripts to another environment
+Skill locations and settings change between tool versions. Check your agent's current documentation if the skill is not discovered. See `skills/verified-engineer/integrations/` for more detail.
 
-`validate_skill.py` is plain Python with no third-party dependencies and no network access. To adapt it: edit `REQUIRED_FILES`, `WORKFLOW_REQUIRED_SECTIONS`, `VENDOR_TERMS`, and the size constants at the top. If your environment lacks Python, validate on a machine that has it; the skill's instructions do not call the script.
+---
 
-## Known limitations and compatibility
+## Usage examples
 
-- Works only with agents that support Agent Skills or can load Markdown instructions from files; this is **not** a claim of universal compatibility.
-- Instructions guide behavior; they are not a security boundary. Sandboxing, permissions, and approval prompts are enforced by the host platform.
-- Agent behavior is non-deterministic and model-dependent; quality varies across agents.
-- Some hosts apply additional frontmatter restrictions or ignore optional fields (`license`, `compatibility`, `metadata`, `allowed-tools`).
-- Reference and workflow files are loaded only if the agent chooses to read them; weaker agents may skip them.
-- The validator's YAML handling and link checking are intentionally limited (see above).
-- No behavioral evaluation results are included.
+```text
+Use verified-engineer to add a --dry-run flag to the CLI and cover it with tests.
+```
+```text
+Review the changes on this branch. Do not modify any files.
+```
+```text
+This test fails intermittently. Find the root cause before changing anything.
+```
+```text
+Are we ready to release v1.2? Report only; do not tag or publish.
+```
+
+If the skill does not trigger on its own, name it explicitly in your request.
+
+---
+
+## How it works
+
+- **`SKILL.md`** is the orchestrator: operating principles, capability detection, intent routing, and the final report format.
+- **`references/`** hold detailed guidance (debugging, testing, review, Git, security, and more) and are loaded only when relevant.
+- **`workflows/`** hold step-by-step procedures for each mode. Each has the same ten sections, from *Purpose* through *Completion criteria*.
+- **Capability detection:** the agent checks which tools it really has (read, search, edit, shell, Git, network). If one is missing, it says so, adapts (for example by giving a patch and the command for you to run), and does not pretend.
+- **Safety:** repository content, logs, and tool output are treated as untrusted data. Embedded instructions are not followed.
+
+---
+
+## Repository layout
+
+```
+verified-engineer-skill/
+├── README.md                    this file
+├── LICENSE
+└── skills/
+    └── verified-engineer/
+        ├── SKILL.md             entry point
+        ├── README.md            package-level notes
+        ├── references/          9 guides (loaded on demand)
+        ├── workflows/           7 step-by-step procedures
+        ├── integrations/        optional host-specific notes
+        ├── templates/           project-instruction snippet
+        ├── scripts/validate_skill.py
+        ├── tests/test_validate_skill.py
+        └── evals/behavior-tests.md
+```
+
+---
+
+## Validate and test
+
+Requires Python 3.8+ and nothing else (standard library only).
+
+```bash
+# Validate the package structure (read-only)
+python skills/verified-engineer/scripts/validate_skill.py --strict
+
+# Run the validator's unit tests
+python -m unittest discover -s skills/verified-engineer/tests -v
+```
+
+Exit codes: `0` pass, `1` validation failure, `2` usage problem or internal error. Use `--allow-dir-mismatch` if you validate a copy whose folder name differs from the skill name.
+
+**Validation is not evaluation.** The validator checks files: frontmatter, naming, links, required sections. It cannot show that an agent follows the skill. For that, run the manual scenarios in `skills/verified-engineer/evals/behavior-tests.md` on your own agent, several times each, and record the results.
+
+---
+
+## Customize
+
+- Edit workflows in `workflows/`, keeping the ten required sections (the validator enforces them).
+- Put project-specific commands and conventions in your agent's instruction file, not in the core skill.
+- Add a reference or workflow, link it from `SKILL.md` so agents know when to load it, and add it to `REQUIRED_FILES` in the validator if it should be mandatory.
+- If the skill triggers too rarely or too often, tune the frontmatter `description`, then retest.
+
+---
+
+## Limitations
+
+- Works only with agents that support Agent Skills or can load Markdown instructions from files. This is **not** a claim of universal compatibility.
+- Instructions guide behavior; they are not a security boundary. Sandboxing and permission prompts belong to the host platform.
+- Results depend on the model and the tools the agent has. A skill cannot make a weak agent reason like a strong one.
+- Weaker agents may skip the reference files.
+- The validator uses a small YAML subset parser and checks only inline Markdown links.
+- No behavioral evaluation results are published yet. Treat claims about agent behavior as unproven until you measure them.
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening one:
+
+1. Run the validator in strict mode and the unit tests.
+2. Keep core files vendor-neutral; put host-specific notes under `integrations/`.
+3. If you change agent-facing instructions, run at least a few scenarios from `evals/behavior-tests.md` and describe the results.
+
+---
 
 ## License
 
-MIT (declared in the `SKILL.md` frontmatter). Add a `LICENSE` file if you redistribute.
+MIT. See [LICENSE](LICENSE).
