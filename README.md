@@ -1,4 +1,4 @@
-# agentic-coding-engineer
+# Verified-engineer-skill
 
 A portable **Agent Skill** that guides an AI coding agent through the full software-engineering lifecycle in the style of modern coding agents: understand the request, explore the repository, plan, implement, debug, test, review, refactor, inspect Git changes, check security, and report **only what was actually verified**.
 
